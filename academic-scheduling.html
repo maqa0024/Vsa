@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dərs Cədvəli İdarəetmə Sistemi</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f1f5f9;color:#1e293b;font-size:14px}
+.app{display:flex;flex-direction:column;height:100vh;min-height:600px}
+.topbar{background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.topbar h1{font-size:16px;font-weight:600;margin-right:8px;color:#1e293b}
+.topbar select{font-size:13px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#1e293b}
+.btn{font-size:12px;padding:6px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#1e293b;cursor:pointer}
+.btn:hover{background:#f8fafc}
+.btn-primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.btn-primary:hover{background:#1d4ed8}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:230px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;overflow:hidden}
+.sidebar-tabs{display:flex;border-bottom:1px solid #e2e8f0}
+.stab{flex:1;padding:8px 4px;font-size:11px;text-align:center;cursor:pointer;border-bottom:2px solid transparent;color:#64748b}
+.stab.active{border-bottom-color:#2563eb;color:#2563eb;font-weight:600}
+.sidebar-content{flex:1;overflow-y:auto;padding:10px}
+.sidebar-section label{font-size:11px;color:#64748b;display:block;margin-bottom:3px;margin-top:6px}
+.sidebar-section input,.sidebar-section select{width:100%;font-size:12px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1e293b;margin-bottom:2px}
+.item-list{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.item-chip{font-size:11px;padding:5px 8px;border-radius:6px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center}
+.chip-del{cursor:pointer;color:#94a3b8;font-size:11px;padding:0 2px;line-height:1}
+.chip-del:hover{color:#dc2626}
+.grid-area{flex:1;overflow:auto;padding:14px}
+.grid-wrap{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+table{width:100%;border-collapse:collapse}
+th{background:#f8fafc;font-size:12px;font-weight:600;padding:9px 6px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;color:#475569}
+td{border:1px solid #e2e8f0;vertical-align:top;padding:0}
+.time-cell{background:#f8fafc;font-size:11px;color:#64748b;padding:6px 8px;text-align:center;white-space:nowrap;font-weight:600;min-width:58px}
+.drop-cell{min-height:76px;padding:3px;cursor:pointer;transition:background .15s}
+.drop-cell.drag-over{background:#eff6ff;outline:2px dashed #93c5fd;outline-offset:-2px}
+.drop-cell:hover{background:#f8fafc}
+.lesson-card{border-radius:6px;padding:4px 6px;font-size:11px;margin-bottom:2px;cursor:grab;position:relative;border-left:3px solid}
+.lesson-card:active{cursor:grabbing;opacity:.8}
+.lc-lecture{background:#dbeafe;border-color:#3b82f6;color:#1e40af}
+.lc-seminar{background:#dcfce7;border-color:#22c55e;color:#166534}
+.lc-lab{background:#f3e8ff;border-color:#a855f7;color:#6b21a8}
+.lc-title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.lc-sub{opacity:.75;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.lc-del{position:absolute;top:2px;right:3px;cursor:pointer;opacity:.4;font-size:10px;line-height:1;background:none;border:none;color:inherit}
+.lc-del:hover{opacity:1;color:#dc2626}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:#fff;border-radius:12px;border:1px solid #e2e8f0;width:370px;max-width:95vw;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:14px;color:#1e293b}
+.modal label{font-size:12px;color:#64748b;display:block;margin-bottom:3px;margin-top:8px}
+.modal select,.modal input{width:100%;font-size:13px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#1e293b}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.conflict-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:9px 12px;font-size:12px;color:#dc2626;margin-bottom:10px;margin-top:4px;line-height:1.6}
+.ok-box{background:#f0fdf4;border:1px solid #86efac;border-radius:7px;padding:9px 12px;font-size:12px;color:#166534;margin-bottom:10px;margin-top:4px}
+.legend{display:flex;gap:14px;padding:9px 14px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;flex-wrap:wrap;align-items:center}
+.leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+.notice{font-size:12px;color:#94a3b8;text-align:center;padding:14px;background:#f8fafc;border-radius:7px;margin-top:6px}
+.stat-badge{font-size:12px;color:#64748b;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <h1>📅 Dərs Cədvəli İdarəetmə Sistemi</h1>
+    <select id="semSelect" onchange="changeSem()">
+      <option value="1">2024-2025 Payız</option>
+      <option value="2">2024-2025 Yaz</option>
+    </select>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Dərs əlavə et</button>
+    <button class="btn" onclick="clearAll()">🗑 Sıfırla</button>
+    <span class="stat-badge" id="statBadge"></span>
+  </div>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <div class="stab active" onclick="switchTab('rooms',this)">Otaqlar</div>
+        <div class="stab" onclick="switchTab('teachers',this)">Müəllimlər</div>
+        <div class="stab" onclick="switchTab('subjects',this)">Fənlər</div>
+        <div class="stab" onclick="switchTab('groups',this)">Qruplar</div>
+      </div>
+
+      <div class="sidebar-content">
+
+        <!-- ROOMS TAB -->
+        <div id="tab-rooms">
+          <div class="sidebar-section">
+            <label>Otaq adı</label>
+            <input id="r-name" placeholder="B-101">
+            <label>Tutum (yer)</label>
+            <input id="r-cap" type="number" placeholder="60">
+            <label>Növ</label>
+            <select id="r-type">
+              <option value="lecture">Mühazirə zalı</option>
+              <option value="lab">Laboratoriya</option>
+              <option value="seminar">Seminar otağı</option>
+            </select>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="addRoom()">Əlavə et</button>
+          </div>
+          <div class="item-list" id="room-list"></div>
+        </div>
+
+        <!-- TEACHERS TAB -->
+        <div id="tab-teachers" style="display:none">
+          <div class="sidebar-section">
+            <label>Ad Soyad</label>
+            <input id="t-name" placeholder="Əli Əliyev">
+            <label>Kafedra</label>
+            <input id="t-dept" placeholder="Kompüter Elmləri">
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="addTeacher()">Əlavə et</button>
+          </div>
+          <div class="item-list" id="teacher-list"></div>
+        </div>
+
+        <!-- SUBJECTS TAB -->
+        <div id="tab-subjects" style="display:none">
+          <div class="sidebar-section">
+            <label>Fənn adı</label>
+            <input id="s-name" placeholder="Riyaziyyat">
+            <label>Kodu</label>
+            <input id="s-code" placeholder="MATH101">
+            <label>Kredit</label>
+            <input id="s-cr" type="number" placeholder="4">
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="addSubject()">Əlavə et</button>
+          </div>
+          <div class="item-list" id="subject-list"></div>
+        </div>
+
+        <!-- GROUPS TAB -->
+        <div id="tab-groups" style="display:none">
+          <div class="sidebar-section">
+            <label>Qrup adı</label>
+            <input id="g-name" placeholder="BAKI-101">
+            <label>Tələbə sayı</label>
+            <input id="g-count" type="number" placeholder="25">
+            <label>İxtisas</label>
+            <input id="g-spec" placeholder="İnformatika">
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="addGroup()">Əlavə et</button>
+          </div>
+          <div class="item-list" id="group-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SCHEDULE GRID -->
+    <div class="grid-area">
+      <div class="grid-wrap">
+        <table id="schedTable">
+          <thead>
+            <tr>
+              <th>Saat</th>
+              <th>Bazar ertəsi</th>
+              <th>Ç. axşamı</th>
+              <th>Çərşənbə</th>
+              <th>C. axşamı</th>
+              <th>Cümə</th>
+              <th>Şənbə</th>
+            </tr>
+          </thead>
+          <tbody id="schedBody"></tbody>
+        </table>
+        <div class="legend">
+          <span><span class="leg-dot" style="background:#dbeafe;border:1.5px solid #3b82f6"></span>Mühazirə</span>
+          <span><span class="leg-dot" style="background:#dcfce7;border:1.5px solid #22c55e"></span>Seminar</span>
+          <span><span class="leg-dot" style="background:#f3e8ff;border:1.5px solid #a855f7"></span>Laboratoriya</span>
+          <span style="margin-left:auto;font-style:italic">💡 Dərsi tutub sürüşdürün</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD ENTRY MODAL -->
+<div id="addModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Yeni dərs əlavə et</h2>
+    <div id="conflictBox" style="display:none"></div>
+    <label>Fənn</label>
+    <select id="m-subject"></select>
+    <label>Müəllim</label>
+    <select id="m-teacher"></select>
+    <label>Otaq</label>
+    <select id="m-room"></select>
+    <label>Qrup</label>
+    <select id="m-group"></select>
+    <label>Gün</label>
+    <select id="m-day">
+      <option value="1">Bazar ertəsi</option>
+      <option value="2">Çərşənbə axşamı</option>
+      <option value="3">Çərşənbə</option>
+      <option value="4">Cümə axşamı</option>
+      <option value="5">Cümə</option>
+      <option value="6">Şənbə</option>
+    </select>
+    <label>Başlama saatı</label>
+    <select id="m-time">
+      <option value="09:00">09:00 – 10:30</option>
+      <option value="10:30">10:30 – 12:00</option>
+      <option value="12:00">12:00 – 13:30</option>
+      <option value="13:30">13:30 – 15:00</option>
+      <option value="15:00">15:00 – 16:30</option>
+      <option value="16:30">16:30 – 18:00</option>
+    </select>
+    <label>Dərs növü</label>
+    <select id="m-type">
+      <option value="lecture">Mühazirə</option>
+      <option value="seminar">Seminar</option>
+      <option value="lab">Laboratoriya</option>
+    </select>
+    <div class="modal-btns">
+      <button class="btn" onclick="closeModal()">Ləğv et</button>
+      <button class="btn" onclick="checkConflictsModal()">🔍 Yoxla</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Yadda saxla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TIMES = ["09:00","10:30","12:00","13:30","15:00","16:30"];
+const DAYS  = [1,2,3,4,5,6];
+
+let data = { rooms:[], teachers:[], subjects:[], groups:[], entries:[], nextId:1 };
+let dragId = null;
+
+function save(){ try{ localStorage.setItem('sched_app_v2', JSON.stringify(data)); }catch(e){} }
+function load(){ try{ const d=localStorage.getItem('sched_app_v2'); if(d) data=JSON.parse(d); }catch(e){} }
+
+load();
+if(!data.rooms.length) seed();
+renderAll();
+
+function seed(){
+  data.rooms   = [{id:1,name:"B-101",capacity:60,type:"lecture"},{id:2,name:"Lab-202",capacity:30,type:"lab"},{id:3,name:"S-305",capacity:40,type:"seminar"}];
+  data.teachers= [{id:1,name:"Əli Əliyev",dept:"Kompüter Elmləri"},{id:2,name:"Leyla Həsənova",dept:"Riyaziyyat"}];
+  data.subjects= [{id:1,name:"Proqramlaşdırma",code:"CS101",credits:4},{id:2,name:"Riyaziyyat",code:"MATH101",credits:5}];
+  data.groups  = [{id:1,name:"BAKI-101",count:25,spec:"İnformatika"},{id:2,name:"BAKI-102",count:30,spec:"İnformatika"}];
+  data.entries = [
+    {id:data.nextId++,subjectId:1,teacherId:1,roomId:1,groupId:1,day:1,time:"09:00",type:"lecture",sem:1},
+    {id:data.nextId++,subjectId:2,teacherId:2,roomId:3,groupId:2,day:2,time:"10:30",type:"seminar",sem:1},
+    {id:data.nextId++,subjectId:1,teacherId:1,roomId:2,groupId:1,day:3,time:"13:30",type:"lab",sem:1},
+  ];
+  save();
+}
+
+function getActiveSem(){ return parseInt(document.getElementById('semSelect').value)||1; }
+
+function addMins(t,m){
+  const [h,mn]=t.split(':').map(Number),tot=h*60+mn+m;
+  return String(Math.floor(tot/60)).padStart(2,'0')+':'+String(tot%60).padStart(2,'0');
+}
+
+function find(arr,id){ return arr.find(x=>x.id===id)||{name:'?',capacity:0,count:0}; }
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+
+function renderAll(){ renderSideLists(); renderGrid(); updateStat(); }
+
+function renderSideLists(){
+  renderList('room-list',    data.rooms,    r=>`${r.name} · ${r.capacity} yer`, 'rooms');
+  renderList('teacher-list', data.teachers, t=>`${t.name}`, 'teachers');
+  renderList('subject-list', data.subjects, s=>`${s.name} [${s.code}]`, 'subjects');
+  renderList('group-list',   data.groups,   g=>`${g.name} – ${g.count} tələbə`, 'groups');
+}
+
+function renderList(elId, arr, labelFn, type){
+  const el=document.getElementById(elId);
+  if(!arr.length){ el.innerHTML='<div class="notice">Hələ heç nə əlavə edilməyib</div>'; return; }
+  el.innerHTML=arr.map(item=>`
+    <div class="item-chip">
+      <span>${labelFn(item)}</span>
+      <button class="chip-del" onclick="deleteItem('${type}',${item.id})">✕</button>
+    </div>`).join('');
+}
+
+function renderGrid(){
+  const sem=getActiveSem();
+  document.getElementById('schedBody').innerHTML=TIMES.map(time=>`
+    <tr>
+      <td class="time-cell">${time}<br><span style="font-size:9px;opacity:.6">${addMins(time,90)}</span></td>
+      ${DAYS.map(day=>`
+        <td class="drop-cell"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="handleDrop(event,${day},'${time}')">
+          ${data.entries.filter(e=>e.sem===sem&&e.day===day&&e.time===time).map(e=>cardHTML(e)).join('')}
+        </td>`).join('')}
+    </tr>`).join('');
+}
+
+function cardHTML(e){
+  const sub=find(data.subjects,e.subjectId);
+  const tch=find(data.teachers,e.teacherId);
+  const rm =find(data.rooms,e.roomId);
+  const grp=find(data.groups,e.groupId);
+  return `<div class="lesson-card lc-${e.type}" draggable="true"
+    ondragstart="dragId=${e.id}" ondragend="document.querySelectorAll('.drop-cell').forEach(c=>c.classList.remove('drag-over'))">
+    <div class="lc-title">${sub.name}</div>
+    <div class="lc-sub">${tch.name}</div>
+    <div class="lc-sub">${rm.name} · ${grp.name}</div>
+    <button class="lc-del" onclick="deleteEntry(${e.id})">✕</button>
+  </div>`;
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+
+function handleDrop(ev, day, time){
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if(dragId===null) return;
+  const entry=data.entries.find(e=>e.id===dragId);
+  if(!entry) return;
+  const conflicts=detectConflicts({...entry,day,time},entry.id);
+  if(conflicts.length){ alert('⚠️ Conflict tapıldı:\n\n'+conflicts.join('\n')); return; }
+  entry.day=day; entry.time=time;
+  save(); renderGrid(); updateStat();
+  dragId=null;
+}
+
+// ── CONFLICT CHECK ────────────────────────────────────────────────────────────
+
+function detectConflicts(candidate, excludeId=null){
+  const conflicts=[];
+  const sem=candidate.sem||getActiveSem();
+  const others=data.entries.filter(e=>e.id!==excludeId&&e.sem===sem&&e.day===candidate.day&&e.time===candidate.time);
+  if(others.find(e=>e.roomId===candidate.roomId))
+    conflicts.push(`🏫 Otaq "${find(data.rooms,candidate.roomId).name}" bu saatda artıq doludur`);
+  if(others.find(e=>e.teacherId===candidate.teacherId))
+    conflicts.push(`👤 "${find(data.teachers,candidate.teacherId).name}" müəllim bu saatda başqa dərsdədir`);
+  const rm=find(data.rooms,candidate.roomId), grp=find(data.groups,candidate.groupId);
+  if(rm.capacity && grp.count && grp.count>rm.capacity)
+    conflicts.push(`👥 Qrupdakı ${grp.count} tələbə otağın ${rm.capacity} yerlik tutumundan çoxdur`);
+  return conflicts;
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────────
+
+function switchTab(name, el){
+  ['rooms','teachers','subjects','groups'].forEach(t=>
+    document.getElementById('tab-'+t).style.display=t===name?'':'none');
+  document.querySelectorAll('.stab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function addRoom(){
+  const n=document.getElementById('r-name').value.trim();
+  const c=parseInt(document.getElementById('r-cap').value);
+  const t=document.getElementById('r-type').value;
+  if(!n||!c){ alert('Ad və tutumu daxil edin'); return; }
+  data.rooms.push({id:data.nextId++,name:n,capacity:c,type:t});
+  document.getElementById('r-name').value='';
+  document.getElementById('r-cap').value='';
+  save(); renderSideLists();
+}
+
+function addTeacher(){
+  const n=document.getElementById('t-name').value.trim();
+  const d=document.getElementById('t-dept').value.trim();
+  if(!n){ alert('Ad daxil edin'); return; }
+  data.teachers.push({id:data.nextId++,name:n,dept:d});
+  document.getElementById('t-name').value='';
+  document.getElementById('t-dept').value='';
+  save(); renderSideLists();
+}
+
+function addSubject(){
+  const n=document.getElementById('s-name').value.trim();
+  const c=document.getElementById('s-code').value.trim();
+  const cr=parseInt(document.getElementById('s-cr').value)||0;
+  if(!n||!c){ alert('Ad və kodu daxil edin'); return; }
+  data.subjects.push({id:data.nextId++,name:n,code:c,credits:cr});
+  document.getElementById('s-name').value='';
+  document.getElementById('s-code').value='';
+  document.getElementById('s-cr').value='';
+  save(); renderSideLists();
+}
+
+function addGroup(){
+  const n=document.getElementById('g-name').value.trim();
+  const c=parseInt(document.getElementById('g-count').value)||0;
+  const s=document.getElementById('g-spec').value.trim();
+  if(!n||!c){ alert('Ad və tələbə sayını daxil edin'); return; }
+  data.groups.push({id:data.nextId++,name:n,count:c,spec:s});
+  document.getElementById('g-name').value='';
+  document.getElementById('g-count').value='';
+  document.getElementById('g-spec').value='';
+  save(); renderSideLists();
+}
+
+function deleteItem(type,id){
+  if(!confirm('Silmək istəyirsiniz?')) return;
+  data[type]=data[type].filter(x=>x.id!==id);
+  save(); renderAll();
+}
+
+function deleteEntry(id){
+  data.entries=data.entries.filter(e=>e.id!==id);
+  save(); renderGrid(); updateStat();
+}
+
+function clearAll(){
+  if(!confirm('Bütün cədvəli silmək istəyirsiniz?')) return;
+  data.entries=[];
+  save(); renderGrid(); updateStat();
+}
+
+function changeSem(){ renderGrid(); updateStat(); }
+
+function updateStat(){
+  const n=data.entries.filter(e=>e.sem===getActiveSem()).length;
+  document.getElementById('statBadge').textContent=n+' dərs cədvəldə';
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+
+function openAddModal(){
+  if(!data.subjects.length||!data.teachers.length||!data.rooms.length||!data.groups.length){
+    alert('Zəhmət olmasa əvvəlcə ən azı 1 fənn, müəllim, otaq və qrup əlavə edin.');
+    return;
+  }
+  document.getElementById('m-subject').innerHTML=data.subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('m-teacher').innerHTML=data.teachers.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('m-room').innerHTML=data.rooms.map(r=>`<option value="${r.id}">${r.name} (${r.capacity} yer)</option>`).join('');
+  document.getElementById('m-group').innerHTML=data.groups.map(g=>`<option value="${g.id}">${g.name} – ${g.count} tələbə</option>`).join('');
+  document.getElementById('conflictBox').style.display='none';
+  document.getElementById('addModal').style.display='flex';
+}
+
+function closeModal(){ document.getElementById('addModal').style.display='none'; }
+
+function getModalData(){
+  return {
+    subjectId:parseInt(document.getElementById('m-subject').value),
+    teacherId:parseInt(document.getElementById('m-teacher').value),
+    roomId:parseInt(document.getElementById('m-room').value),
+    groupId:parseInt(document.getElementById('m-group').value),
+    day:parseInt(document.getElementById('m-day').value),
+    time:document.getElementById('m-time').value,
+    type:document.getElementById('m-type').value,
+    sem:getActiveSem()
+  };
+}
+
+function checkConflictsModal(){
+  const c=detectConflicts(getModalData());
+  const box=document.getElementById('conflictBox');
+  if(c.length){
+    box.className='conflict-box';
+    box.innerHTML='<b>⚠️ Conflict tapıldı:</b><br>'+c.join('<br>');
+  } else {
+    box.className='ok-box';
+    box.innerHTML='✅ Heç bir conflict yoxdur — əlavə edə bilərsiniz';
+  }
+  box.style.display='block';
+}
+
+function saveEntry(){
+  const d=getModalData();
+  const c=detectConflicts(d);
+  if(c.length){ checkConflictsModal(); return; }
+  data.entries.push({id:data.nextId++,...d});
+  save(); closeModal(); renderGrid(); updateStat();
+}
+
+// Close modal on overlay click
+document.getElementById('addModal').addEventListener('click', function(e){
+  if(e.target===this) closeModal();
+});
+</script>
+</body>
+</html>
